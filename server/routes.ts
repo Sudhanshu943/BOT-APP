@@ -319,37 +319,61 @@ function disconnectBot() {
   return false;
 }
 
+// Anti-AFK task states
+type AntiAfkState = 'idle' | 'exploring' | 'mining' | 'farming' | 'crafting' | 'returning';
+let antiAfkState: AntiAfkState = 'idle';
+let antiAfkTarget: Vec3 | null = null;
+let antiAfkStartPosition: Vec3 | null = null;
+let antiAfkTaskTimeout: NodeJS.Timeout | null = null;
+
 function setupAntiAfk(config: any) {
   if (antiAfkInterval) {
     clearInterval(antiAfkInterval);
   }
   
+  if (antiAfkTaskTimeout) {
+    clearTimeout(antiAfkTaskTimeout);
+    antiAfkTaskTimeout = null;
+  }
+  
+  // Reset state
+  antiAfkState = 'idle';
+  antiAfkTarget = null;
+  antiAfkStartPosition = null;
+  
   const interval = config.afkInterval * 1000;
   const antiDetection = antiDetectionSettings[config.antiDetectionLevel as keyof typeof antiDetectionSettings];
+  
+  // Record starting position if available
+  if (bot && bot.entity) {
+    antiAfkStartPosition = bot.entity.position.clone();
+  }
   
   antiAfkInterval = setInterval(() => {
     if (!bot || !botStatus.connected) return;
     
+    // More advanced anti-AFK with state machine for different tasks
     const randomAction = Math.random();
     
-    if (randomAction < 0.25) {
+    // Perform basic random actions to appear active
+    if (randomAction < 0.15) {
       // Look around randomly
-      const yaw = (Math.random() * Math.PI) - (Math.PI/2);
+      const yaw = (Math.random() * Math.PI * 2);
       const pitch = (Math.random() * Math.PI) - (Math.PI/2);
       bot.look(yaw, pitch, false);
       broadcastConsole('Anti-AFK: Looking around', 'bot');
-    } else if (randomAction < 0.5) {
+    } else if (randomAction < 0.25) {
       // Jump
       bot.setControlState('jump', true);
       setTimeout(() => {
         bot.setControlState('jump', false);
       }, 500);
       broadcastConsole('Anti-AFK: Jumping', 'bot');
-    } else if (randomAction < 0.75) {
+    } else if (randomAction < 0.35) {
       // Swing arm
       bot.swingArm();
       broadcastConsole('Anti-AFK: Swinging arm', 'bot');
-    } else {
+    } else if (randomAction < 0.45) {
       // Turn 360 degrees slowly
       const currentYaw = bot.entity.yaw;
       let targetYaw = currentYaw;
@@ -369,6 +393,132 @@ function setupAntiAfk(config: any) {
       }, antiDetection.moveDelay);
       
       broadcastConsole('Anti-AFK: Turning around', 'bot');
+    } else if (randomAction < 0.65) {
+      // Walk in a random direction if not already exploring
+      if (antiAfkState === 'idle') {
+        const randomDirection = Math.floor(Math.random() * 4);
+        antiAfkState = 'exploring';
+        
+        // Clear previous movement
+        bot.clearControlStates();
+        
+        switch (randomDirection) {
+          case 0:
+            bot.setControlState('forward', true);
+            broadcastConsole('Anti-AFK: Walking forward', 'bot');
+            break;
+          case 1:
+            bot.setControlState('back', true);
+            broadcastConsole('Anti-AFK: Walking backward', 'bot');
+            break;
+          case 2:
+            bot.setControlState('left', true);
+            broadcastConsole('Anti-AFK: Walking left', 'bot');
+            break;
+          case 3:
+            bot.setControlState('right', true);
+            broadcastConsole('Anti-AFK: Walking right', 'bot');
+            break;
+        }
+        
+        // Stop after a random time (3-8 seconds)
+        const walkTime = Math.floor(Math.random() * 5000) + 3000;
+        antiAfkTaskTimeout = setTimeout(() => {
+          if (!bot) return;
+          bot.clearControlStates();
+          antiAfkState = 'idle';
+          broadcastConsole('Anti-AFK: Stopped walking', 'bot');
+        }, walkTime);
+      }
+    } else if (randomAction < 0.80) {
+      // Try to mine a block if not already in a task
+      if (antiAfkState === 'idle' && bot.entity) {
+        antiAfkState = 'mining';
+        
+        // Look slightly down to find blocks
+        bot.look(bot.entity.yaw, Math.PI / 4, false);
+        
+        // Try to find a block to mine in front of the bot
+        const block = bot.blockAtCursor(5);
+        
+        if (block && block.name !== 'air' && block.name !== 'bedrock') {
+          broadcastConsole(`Anti-AFK: Mining ${block.name}`, 'bot');
+          bot.dig(block).then(() => {
+            broadcastConsole(`Anti-AFK: Finished mining ${block.name}`, 'bot');
+            antiAfkState = 'idle';
+          }).catch(() => {
+            // If mining fails, just reset state
+            antiAfkState = 'idle';
+          });
+        } else {
+          broadcastConsole('Anti-AFK: No suitable block to mine', 'bot');
+          antiAfkState = 'idle';
+        }
+      }
+    } else if (randomAction < 0.90) {
+      // Random chat message with low probability to avoid spam
+      if (Math.random() < 0.1) { // 10% chance of this already rare event
+        const messages = [
+          'Just mining some resources',
+          'Anyone else online?',
+          'The weather is nice today',
+          'I like this server',
+          'Just exploring'
+        ];
+        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+        bot.chat(randomMessage);
+        broadcastConsole(`Anti-AFK: Sent chat message: ${randomMessage}`, 'bot');
+      }
+    } else {
+      // Return to start position if we've strayed far and not in the middle of a task
+      if (antiAfkState === 'idle' && antiAfkStartPosition && bot.entity) {
+        const distance = bot.entity.position.distanceTo(antiAfkStartPosition);
+        
+        // If we're more than 20 blocks away from our start position
+        if (distance > 20) {
+          broadcastConsole('Anti-AFK: Returning to starting position', 'bot');
+          antiAfkState = 'returning';
+          
+          // Try to pathfind back to start position
+          if (bot.pathfinder) {
+            try {
+              const mcData = minecraftData(bot.version);
+              const movements = new Movements(bot, mcData);
+              bot.pathfinder.setMovements(movements);
+              
+              // Create a proper goal from the stored position
+              bot.pathfinder.setGoal({ x: antiAfkStartPosition.x, y: antiAfkStartPosition.y, z: antiAfkStartPosition.z, reach: 1 });
+              broadcastConsole('Anti-AFK: Returning to starting position', 'bot');
+              
+              // Reset state after a timeout in case pathfinding gets stuck
+              setTimeout(() => {
+                if (antiAfkState === 'returning') {
+                  broadcastConsole('Anti-AFK: Timeout while returning, resetting state', 'bot');
+                  antiAfkState = 'idle';
+                }
+              }, 30000); // 30 second timeout
+            } catch (err) {
+              broadcastConsole('Anti-AFK: Failed to start pathfinding', 'error');
+              antiAfkState = 'idle';
+            }
+          } else {
+            // If pathfinder not available, just move in the general direction
+            const dx = antiAfkStartPosition.x - bot.entity.position.x;
+            const dz = antiAfkStartPosition.z - bot.entity.position.z;
+            
+            const yaw = Math.atan2(-dx, -dz);
+            bot.look(yaw, 0, true);
+            bot.setControlState('forward', true);
+            
+            // Move for a while then stop
+            antiAfkTaskTimeout = setTimeout(() => {
+              bot.clearControlStates();
+              antiAfkState = 'idle';
+              broadcastConsole('Anti-AFK: Stopped returning', 'bot');
+            }, 5000);
+          }
+        }
+      }
     }
   }, interval);
 }
