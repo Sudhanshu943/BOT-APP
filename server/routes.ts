@@ -13,14 +13,28 @@ import { Vec3 } from "vec3";
 
 // Bot instance and status
 let bot: any = null;
+// Define types for typed inventory and entities
+type InventoryItem = {
+  name: string;
+  count: number;
+  slot: number;
+};
+
+type NearbyEntity = {
+  name: string;
+  distance: number;
+  type: string;
+};
+
+// Bot status with proper typing
 let botStatus = {
   connected: false,
   position: { x: 0, y: 0, z: 0 },
   health: 0,
   food: 0,
   dimension: "Overworld",
-  inventory: [],
-  nearbyEntities: []
+  inventory: [] as InventoryItem[],
+  nearbyEntities: [] as NearbyEntity[]
 };
 
 // WebSocket connections for real-time updates
@@ -94,20 +108,20 @@ function updateBotStatus() {
       food: food || 0,
       dimension: bot.game?.dimension || "Overworld",
       inventory: Object.values(bot.inventory.slots || {})
-        .filter(item => item)
+        .filter((item: any) => item)
         .map((item: any) => ({
           name: item.name,
           count: item.count,
           slot: item.slot
-        })),
+        })) as InventoryItem[],
       nearbyEntities: Object.values(bot.entities || {})
         .filter((entity: any) => entity.type === 'mob' || entity.type === 'player')
         .map((entity: any) => ({
           name: entity.username || entity.name || entity.displayName || entity.type,
           distance: Math.floor(bot.entity.position.distanceTo(entity.position)),
           type: entity.type
-        }))
-        .sort((a: any, b: any) => a.distance - b.distance)
+        })) as NearbyEntity[]
+        .sort((a, b) => a.distance - b.distance)
         .slice(0, 10)
     };
     
@@ -133,7 +147,7 @@ async function connectBot(config: any) {
       hideErrors: false,
       checkTimeoutInterval: 60000,
       // Important for Aternos: Adding slightly more human-like behavior
-      viewDistance: 'normal',
+      viewDistance: "far" as const, // Use 'as const' to type it properly
       respawn: config.autoRespawnEnabled
     };
     
@@ -148,7 +162,8 @@ async function connectBot(config: any) {
       
       // Initialize pathfinder
       const mcData = minecraftData(bot.version);
-      const movements = new Movements(bot, mcData);
+      // Create movements with just the bot parameter
+      const movements = new Movements(bot);
       
       // Apply anti-detection settings
       const antiDetection = antiDetectionSettings[config.antiDetectionLevel as keyof typeof antiDetectionSettings] || 
@@ -156,7 +171,8 @@ async function connectBot(config: any) {
       
       movements.canDig = false; // Don't dig blocks
       movements.maxDropDown = 3; // Limit drop height to appear more human
-      movements.blocksCantBreak.push(mcData.blocksByName.bedrock.id);
+      // Set the blocks that can't be broken instead of using push
+      movements.blocksCantBreak = new Set([mcData.blocksByName.bedrock.id]);
       
       bot.pathfinder.setMovements(movements);
       
