@@ -17,20 +17,22 @@ export const PixelBorder: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   );
 };
 
-export const MinecraftScrollbar: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
-  className = '',
-  children,
-  ...props
-}) => {
+export const MinecraftScrollbar = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className = '', children, ...props }, ref) => {
   return (
     <div
+      ref={ref}
       className={`scrollbar-w-3 scrollbar scrollbar-track-[#272727] scrollbar-track-rounded scrollbar-track-border-2 scrollbar-track-border-[#4A4A4A] scrollbar-thumb-[#5C3C24] scrollbar-thumb-rounded scrollbar-thumb-border-2 scrollbar-thumb-border-[#825432] ${className}`}
       {...props}
     >
       {children}
     </div>
   );
-};
+});
+
+MinecraftScrollbar.displayName = 'MinecraftScrollbar';
 
 // Minecraft color classes mapped to Tailwind CSS
 export const minecraftColors = {
