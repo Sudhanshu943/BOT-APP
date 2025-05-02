@@ -1,4 +1,5 @@
 import React from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,9 +26,33 @@ const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
   onDisconnect,
   onConfigChange
 }) => {
+  const { toast } = useToast();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onConnect({});
+    
+    // Check if server address is provided
+    if (!config.serverAddress || config.serverAddress.trim() === '') {
+      toast({
+        title: "Missing Information", 
+        description: "Please enter a server address",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Check if username is provided
+    if (!config.username || config.username.trim() === '') {
+      toast({
+        title: "Missing Information", 
+        description: "Please enter a username",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Pass the current configuration when connecting
+    await onConnect(config);
   };
 
   return (
