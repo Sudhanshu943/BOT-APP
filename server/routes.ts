@@ -13,6 +13,7 @@ import { Vec3 } from "vec3";
 
 // Bot instance and status
 let bot: any = null;
+let antiAfkInterval: NodeJS.Timeout | null = null;
 // Define types for typed inventory and entities
 type InventoryItem = {
   name: string;
@@ -69,7 +70,6 @@ const antiDetectionSettings = {
 };
 
 // Timers and intervals for bot actions
-let antiAfkInterval: NodeJS.Timeout | null = null;
 
 function broadcastStatus() {
   clients.forEach(client => {
@@ -101,28 +101,50 @@ function updateBotStatus() {
     const health = bot.health;
     const food = bot.food;
     
+    // Create a new entities array
+    const entities: NearbyEntity[] = [];
+    
+    // Only process entities if bot.entities exists
+    if (bot.entities) {
+      Object.values(bot.entities).forEach((entity: any) => {
+        if (entity && (entity.type === 'mob' || entity.type === 'player')) {
+          entities.push({
+            name: entity.username || entity.name || entity.displayName || entity.type,
+            distance: Math.floor(bot.entity.position.distanceTo(entity.position)),
+            type: entity.type
+          });
+        }
+      });
+    }
+    
+    // Sort entities by distance
+    entities.sort((a, b) => a.distance - b.distance);
+    
+    // Create a new inventory array
+    const inventory: InventoryItem[] = [];
+    
+    // Only process inventory if bot.inventory exists
+    if (bot.inventory && bot.inventory.slots) {
+      Object.values(bot.inventory.slots).forEach((item: any) => {
+        if (item) {
+          inventory.push({
+            name: item.name,
+            count: item.count,
+            slot: item.slot
+          });
+        }
+      });
+    }
+    
+    // Update botStatus
     botStatus = {
       connected: bot !== null,
       position: position ? { x: Math.floor(position.x), y: Math.floor(position.y), z: Math.floor(position.z) } : { x: 0, y: 0, z: 0 },
       health: health || 0,
       food: food || 0,
       dimension: bot.game?.dimension || "Overworld",
-      inventory: Object.values(bot.inventory.slots || {})
-        .filter((item: any) => item)
-        .map((item: any) => ({
-          name: item.name,
-          count: item.count,
-          slot: item.slot
-        })) as InventoryItem[],
-      nearbyEntities: Object.values(bot.entities || {})
-        .filter((entity: any) => entity.type === 'mob' || entity.type === 'player')
-        .map((entity: any) => ({
-          name: entity.username || entity.name || entity.displayName || entity.type,
-          distance: Math.floor(bot.entity.position.distanceTo(entity.position)),
-          type: entity.type
-        })) as NearbyEntity[]
-        .sort((a, b) => a.distance - b.distance)
-        .slice(0, 10)
+      inventory: inventory,
+      nearbyEntities: entities.slice(0, 10)
     };
     
     broadcastStatus();
@@ -145,10 +167,20 @@ async function connectBot(config: any) {
       username: config.username,
       version: config.version,
       hideErrors: false,
-      checkTimeoutInterval: 60000,
+      // Better connection handling for Aternos servers
+      checkTimeoutInterval: 120000, // Longer timeout for slow Aternos servers
+      noPongTimeout: 60000, // Don't disconnect if no ping response for a while
+      closeTimeout: 30000, // Wait longer for server to properly close socket
+      chatLengthLimit: 100, // Limit length of chat messages
       // Important for Aternos: Adding slightly more human-like behavior
       viewDistance: "far" as const, // Use 'as const' to type it properly
-      respawn: config.autoRespawnEnabled
+      // Automatically respawn if enabled
+      respawn: config.autoRespawnEnabled,
+      // Handle Aternos Auth plugin
+      // Use more authentic client behavior
+      physicsEnabled: true,
+      // Don't place blocks automatically
+      autoEat: false
     };
     
     bot = mineflayer.createBot(botConfig);
@@ -194,6 +226,12 @@ async function connectBot(config: any) {
       const messageStr = message.toString();
       broadcastConsole(messageStr, 'server');
       
+      // Handle common Aternos auth plugin messages
+      if (messageStr.includes('/register') || messageStr.includes('/login') || 
+          messageStr.includes('register') || messageStr.includes('login')) {
+        broadcastConsole('Auth request detected! You may need to register or login.', 'system');
+      }
+      
       // Auto-response to whispers if enabled
       if (config.chatResponseEnabled && message.privateMessage) {
         const sender = message.sender || "Unknown";
@@ -209,13 +247,37 @@ async function connectBot(config: any) {
     
     bot.on('kicked', (reason) => {
       broadcastConsole(`Bot was kicked: ${reason}`, 'error');
+      
+      // Provide more specific information about common kick reasons
+      const reasonStr = reason.toString().toLowerCase();
+      if (reasonStr.includes('proxy') || reasonStr.includes('vpn') || reasonStr.includes('auth')) {
+        broadcastConsole('Server may be blocking proxies, VPNs or requiring authentication', 'error');
+      } else if (reasonStr.includes('timeout')) {
+        broadcastConsole('Connection timed out - server might be overloaded or have high ping', 'error');
+      } else if (reasonStr.includes('banned') || reasonStr.includes('blacklisted')) {
+        broadcastConsole('The username or IP might be banned on this server', 'error');
+      } else if (reasonStr.includes('whitelist')) {
+        broadcastConsole('This server uses a whitelist and the bot is not on it', 'error');
+      } else if (reasonStr.includes('outdated') || reasonStr.includes('version')) {
+        broadcastConsole('The Minecraft version might be incorrect - try a different version', 'error');
+      }
+      
       bot = null;
       botStatus.connected = false;
       broadcastStatus();
     });
     
     bot.on('error', (err) => {
-      broadcastConsole(`Bot error: ${err.message}`, 'error');
+      const errorMessage = `Bot error: ${err.message} (Code: ${err.code || 'unknown'})`;
+      console.error(errorMessage, err);
+      broadcastConsole(errorMessage, 'error');
+      
+      // Handle specific common errors
+      if (err.code === 'ECONNRESET') {
+        broadcastConsole('Connection was forcibly closed by the server. This might happen due to server anti-bot measures.', 'error');
+      } else if (err.code === 'ETIMEDOUT') {
+        broadcastConsole('Connection timed out. Please check if the server is online and accessible.', 'error');
+      }
     });
     
     bot.on('end', () => {
