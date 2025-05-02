@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PixelBorder } from './MinecraftTheme';
 import { MineBotConfig } from '@/lib/types';
@@ -103,14 +104,46 @@ const BotConfigPanel: React.FC<BotConfigPanelProps> = ({
             />
           </div>
           
-          <div className="pt-2">
-            <Button
-              onClick={handleSave}
-              className="w-full bg-[#FCDC5F] hover:bg-yellow-600 text-black font-medium py-2 px-4 rounded transition duration-200 flex items-center justify-center"
-              disabled={disabled}
-            >
-              <Save className="h-4 w-4 mr-2" /> Save Configuration
-            </Button>
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="antiAfkEnabled" className="font-medium">Enable Anti-AFK Mode</Label>
+              <Switch
+                id="antiAfkEnabled"
+                checked={config.antiAfkEnabled}
+                onCheckedChange={(checked: boolean) => onConfigChange('antiAfkEnabled', checked)}
+                disabled={disabled}
+              />
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="autoRespawnEnabled" className="font-medium">Auto Respawn</Label>
+              <Switch
+                id="autoRespawnEnabled"
+                checked={config.autoRespawnEnabled}
+                onCheckedChange={(checked: boolean) => onConfigChange('autoRespawnEnabled', checked)}
+                disabled={disabled}
+              />
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="chatResponseEnabled" className="font-medium">Auto Reply to Chat</Label>
+              <Switch
+                id="chatResponseEnabled"
+                checked={config.chatResponseEnabled}
+                onCheckedChange={(checked: boolean) => onConfigChange('chatResponseEnabled', checked)}
+                disabled={disabled}
+              />
+            </div>
+            
+            <div className="pt-3">
+              <Button
+                onClick={handleSave}
+                className="w-full bg-[#FCDC5F] hover:bg-yellow-600 text-black font-medium py-2 px-4 rounded transition duration-200 flex items-center justify-center"
+                disabled={disabled}
+              >
+                <Save className="h-4 w-4 mr-2" /> Save Configuration
+              </Button>
+            </div>
           </div>
         </div>
       </PixelBorder>

@@ -222,7 +222,7 @@ async function connectBot(config: any) {
       updateBotStatus();
     });
     
-    bot.on('message', (message) => {
+    bot.on('message', (message: any) => {
       const messageStr = message.toString();
       broadcastConsole(messageStr, 'server');
       
@@ -245,7 +245,7 @@ async function connectBot(config: any) {
       }
     });
     
-    bot.on('kicked', (reason) => {
+    bot.on('kicked', (reason: any) => {
       broadcastConsole(`Bot was kicked: ${reason}`, 'error');
       
       // Provide more specific information about common kick reasons
@@ -267,7 +267,7 @@ async function connectBot(config: any) {
       broadcastStatus();
     });
     
-    bot.on('error', (err) => {
+    bot.on('error', (err: any) => {
       const errorMessage = `Bot error: ${err.message} (Code: ${err.code || 'unknown'})`;
       console.error(errorMessage, err);
       broadcastConsole(errorMessage, 'error');
@@ -483,7 +483,7 @@ function setupAntiAfk(config: any) {
           if (bot.pathfinder) {
             try {
               const mcData = minecraftData(bot.version);
-              const movements = new Movements(bot, mcData);
+              const movements = new Movements(bot);
               bot.pathfinder.setMovements(movements);
               
               // Create a proper goal from the stored position
