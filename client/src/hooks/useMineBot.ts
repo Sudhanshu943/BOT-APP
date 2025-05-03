@@ -18,14 +18,14 @@ const addConsoleMessage = (setMessages: React.Dispatch<React.SetStateAction<Cons
 export const useMineBot = () => {
   const [config, setConfig] = useState<MineBotConfig>({
     serverAddress: '',
-    serverPort: 25565,
-    username: 'MineBuddy_Bot',
-    version: '1.20.1',
+    serverPort: 13039,
+    username: 'Number_one_BOT',
+    version: '1.21.5',
     movementSpeed: 3,
     antiDetectionLevel: 'balanced',
-    afkInterval: 30,
+    afkInterval: 15,
     chatTemplate: 'Hi {player}, I\'m a bot!',
-    antiAfkEnabled: false,
+    antiAfkEnabled: true,
     autoRespawnEnabled: true,
     chatResponseEnabled: false
   });
