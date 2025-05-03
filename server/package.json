@@ -4,10 +4,9 @@
     "main": "dist/index.js",
     "type": "module",
     "scripts": {
-  "build": "tsc",
-  "start": "node dist/index.js"
-},
-
+        "build": "tsc",
+        "start": "node dist/index.js"
+    },
     "dependencies": {
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -54,7 +53,7 @@
         "@types/cors": "^2.8.17",
         "@types/express": "4.17.21",
         "@types/express-session": "^1.18.0",
-        "@types/node": "20.16.11",
+        "@types/node": "^20.16.11",
         "@types/passport": "^1.0.16",
         "@types/passport-local": "^1.0.38",
         "@types/react": "^18.3.11",
