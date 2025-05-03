@@ -4,9 +4,10 @@
     "main": "dist/index.js",
     "type": "module",
     "scripts": {
-        "build": "esbuild index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-        "start": "node dist/index.js"
-    },
+  "build": "tsc",
+  "start": "node dist/index.js"
+},
+
     "dependencies": {
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
