@@ -6,6 +6,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 
+const baseURL = import.meta.env.VITE_API_BASE_URL;
+fetch(`${baseURL}/api/data`);
+
+
 function Router() {
   return (
     <Switch>

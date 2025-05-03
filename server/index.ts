@@ -6,6 +6,11 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Enable CORS for frontend
+app.use(cors()); // allows all origins
+
+
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -68,3 +73,7 @@ app.use((req, res, next) => {
     log(`serving on port ${port}`);
   });
 })();
+function cors(arg0: { origin: string; credentials: boolean; }): any {
+  throw new Error("Function not implemented.");
+}
+
