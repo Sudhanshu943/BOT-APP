@@ -7,7 +7,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Enable CORS for frontend
-app.use(cors()); // allows all origins
+import cors from "cors";
+
+app.use(cors()); // This works without arguments
+
 
 
 
