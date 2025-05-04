@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { BotStatus, MineBotConfig, BotAction, ConsoleMessage } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { log } from "console";
 
 // Helper function to avoid circular reference
 const addConsoleMessage = (setMessages: React.Dispatch<React.SetStateAction<ConsoleMessage[]>>, message: string, type: ConsoleMessage['type'] = 'info') => {
@@ -93,11 +94,21 @@ export const useMineBot = () => {
     if (websocketRef.current) {
       websocketRef.current.close();
     }
+
+    // console.log(window.location, window.location.host);
+
+    const serverUrl = import.meta.env.VITE_API_URL || '';
+
+    console.log(`Server URL: ${serverUrl}`);
+
+
     
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
+
+    console.log(`WebSocket host: ${host}, protocol: ${protocol}`);
     // Connect to our dedicated WebSocket path to avoid conflicts with Vite
-    const wsUrl = `${protocol}//${host}/ws-minebuddy`;
+    const wsUrl = `${serverUrl}/ws-minebuddy`;
     
     console.log(`Attempting to connect to WebSocket at ${wsUrl}`);
     

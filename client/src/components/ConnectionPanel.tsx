@@ -30,7 +30,7 @@ const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    console.log("Connecting to server with config:", config);
     // Check if server address is provided
     if (!config.serverAddress || config.serverAddress.trim() === '') {
       toast({
@@ -59,7 +59,7 @@ const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
     <div className="col-span-1 bg-[#4A4A4A] rounded-lg p-4">
       <PixelBorder className="rounded-lg p-4 bg-[#4A4A4A]">
         <h2 className="font-['VT323',_monospace] text-xl text-[#3D99F9] border-b-2 border-[#5C3C24] pb-2 mb-4">
-          <Plug className="inline mr-2 h-5 w-5" /> Connection
+          <Plug className="inline mr-2 h-5 w-5" /> Connection 
         </h2>
         
         <form onSubmit={handleSubmit}>

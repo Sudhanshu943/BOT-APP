@@ -3,6 +3,13 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
-    }
-  }
+    },
+    "target": "es2020",         // or es2022, esnext
+    "module": "es2020",         // must be es2020 or newer
+
+  },
+  "include": [
+    "src",
+    "vite-env.d.ts"
+  ]
 }

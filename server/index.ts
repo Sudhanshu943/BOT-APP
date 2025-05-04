@@ -10,7 +10,10 @@ app.use(express.urlencoded({ extended: false }));
 import cors from "cors";
 
 app.use(cors()); // This works without arguments
-
+    
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found" });
+});
 
 
 
@@ -76,7 +79,7 @@ app.use((req, res, next) => {
     log(`serving on port ${port}`);
   });
 })();
-function cors(arg0: { origin: string; credentials: boolean; }): any {
+function customCors(arg0: { origin: string; credentials: boolean; }): any {
   throw new Error("Function not implemented.");
 }
 
