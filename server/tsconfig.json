@@ -5,12 +5,13 @@
     "rootDir": "./",
     "outDir": "./dist",
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
     "strict": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "moduleResolution": "node"
+    "baseUrl": "../",
+    "paths": {
+      "@shared/*": ["shared/*"]
+    }
   },
   "include": ["*.ts"],
-  "exclude": ["dist", "node_modules"]
+  "exclude": ["dist", "node_modules", "vite.ts", "../vite.config.ts"]
 }
